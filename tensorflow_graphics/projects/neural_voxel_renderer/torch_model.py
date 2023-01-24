@@ -4,22 +4,25 @@ import numpy as np
 import math
 
 from torch_helpers import load_params,to_txt
-from torch_modules import VoxelProcessing
-    
+from torch_modules import VoxelProcessing,ProjectionProcessing
+
 
 class NVR_Plus(nn.Module):
     
     def __init__(self):
         super(NVR_Plus, self).__init__()
         self.voxel_processing = VoxelProcessing()
-    
+        self.projection_processing = ProjectionProcessing()
+        
     def forward(self,voxels,final_composite):
         voxel_representation = self.voxel_processing(voxels)
+        projection_representation = self.projection_processing(voxel_representation)
         
-        return voxel_representation
+        
+        return projection_representation
     
 def run_forward():
-    model = VoxelProcessing()
+    model = NVR_Plus()
     params = load_params()
     
     d=model.state_dict()
@@ -35,7 +38,7 @@ def run_forward():
     interpolated_voxels = torch.from_numpy(interpolated_voxels).permute(0,4,1,2,3)
     
     model.eval()
-    debug_output = model(interpolated_voxels)
+    debug_output = model(interpolated_voxels,final_composite)
     to_txt(debug_output)
     print('break')
     

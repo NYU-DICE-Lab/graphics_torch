@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from torch_helpers import load_params
-from torch_blocks import ConvBlock3d, ResBlock3d
+from torch_blocks import ConvBlock3d, ResBlock3d, ResBlock2d
 
 class VoxelProcessing(nn.Module):
     def __init__(self):
@@ -68,3 +68,35 @@ class VoxelProcessing(nn.Module):
             
         self.vol_encoder.weight = torch.nn.parameter.Parameter(torch.from_numpy(params_dict['Network/VoxelProcessing/conv2d/kernel']).permute(3,2,0,1))
         self.vol_encoder.bias = torch.nn.parameter.Parameter(torch.from_numpy(params_dict['Network/VoxelProcessing/conv2d/bias']))
+
+class ProjectionProcessing(nn.Module):
+    
+    def __init__(self):
+        super(ProjectionProcessing, self).__init__()
+        self.e1 = ResBlock2d(512,512)
+        self.e2 = ResBlock2d(512,512)
+        self.e3 = ResBlock2d(512,512)
+        self.e4 = ResBlock2d(512,512)
+        self.e5 = ResBlock2d(512,512)
+        
+        self.e_blocks = [self.e1,self.e2,self.e3,self.e4,self.e5]
+        self.parameterize()
+        
+    def forward(self,x):
+        shortcut = x
+        
+        x = self.e1(x)
+        x = self.e2(x)
+        x = self.e3(x)
+        x = self.e4(x)
+        x = self.e5(x)
+        
+        x = x + shortcut
+        return x
+        
+    def parameterize(self):
+        params = load_params()
+        params_dict = {k:v for k,v in params}
+        
+        for i,e_i in enumerate(self.e_blocks):
+            e_i.parameterize(params_dict,'Network/ProjectionProcessing',2*i,2*i+15)
